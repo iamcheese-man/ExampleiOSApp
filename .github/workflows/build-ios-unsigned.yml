@@ -1,0 +1,53 @@
+name: Build iOS App (Unsigned)
+
+on:
+push:
+branches: [ main ]
+pull_request:
+branches: [ main ]
+workflow_dispatch:
+
+jobs:
+build:
+runs-on: macos-latest
+
+```
+steps:
+- name: Checkout repository
+  uses: actions/checkout@v4
+
+- name: Select Xcode version
+  run: sudo xcode-select -s /Applications/Xcode_15.2.app/Contents/Developer
+
+- name: Show Xcode version
+  run: xcodebuild -version
+
+- name: Build and Archive (Unsigned)
+  run: |
+    xcodebuild \
+      -project ExampleApp.xcodeproj \
+      -scheme ExampleApp \
+      -sdk iphoneos \
+      -configuration Release \
+      CODE_SIGN_IDENTITY="" \
+      CODE_SIGNING_REQUIRED=NO \
+      CODE_SIGNING_ALLOWED=NO \
+      -archivePath $RUNNER_TEMP/ExampleApp.xcarchive \
+      archive
+
+- name: Create Payload Directory
+  run: |
+    mkdir -p $RUNNER_TEMP/Payload
+    cp -r $RUNNER_TEMP/ExampleApp.xcarchive/Products/Applications/ExampleApp.app $RUNNER_TEMP/Payload/
+
+- name: Create Unsigned IPA
+  run: |
+    cd $RUNNER_TEMP
+    zip -r ExampleApp-Unsigned.ipa Payload
+
+- name: Upload Unsigned IPA
+  uses: actions/upload-artifact@v4
+  with:
+    name: ExampleApp-Unsigned-IPA
+    path: ${{ runner.temp }}/ExampleApp-Unsigned.ipa
+```
