@@ -91,15 +91,14 @@ class DiagnosticsViewController: UIViewController {
         info += "Bundle ID: \(Bundle.main.bundleIdentifier ?? "Unknown")\n"
         info += "Version: \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown")\n"
         info += "Build: \(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "Unknown")\n"
+        info += "Executable: \(Bundle.main.executablePath ?? "Unknown")\n"
         info += "\n"
         
-        // Certificate Info
-        info += "🔐 CODE SIGNING\n"
-        if let certInfo = getCodeSigningInfo() {
-            info += certInfo
-        } else {
-            info += "Unable to read signing info\n"
-        }
+        // Device Info
+        info += "📱 DEVICE INFORMATION\n"
+        info += "Model: \(UIDevice.current.model)\n"
+        info += "System: \(UIDevice.current.systemName) \(UIDevice.current.systemVersion)\n"
+        info += "Name: \(UIDevice.current.name)\n"
         info += "\n"
         
         // Provisioning Profile
@@ -111,46 +110,12 @@ class DiagnosticsViewController: UIViewController {
         }
         info += "\n"
         
-        // Entitlements
-        info += "🎫 ENTITLEMENTS\n"
-        if let entitlements = getEntitlements() {
-            info += entitlements
-        } else {
-            info += "Unable to read entitlements\n"
-        }
+        // App Sandbox
+        info += "📂 APP SANDBOX\n"
+        info += "Documents: \(NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true).first ?? "Unknown")\n"
+        info += "Bundle: \(Bundle.main.bundlePath)\n"
         
         infoTextView.text = info
-    }
-    
-    private func getCodeSigningInfo() -> String? {
-        var info = ""
-        
-        // Get executable path
-        guard let executablePath = Bundle.main.executablePath else {
-            return "Executable path not found"
-        }
-        
-        // Try to read code signature
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: "/usr/bin/codesign")
-        task.arguments = ["-dv", executablePath]
-        
-        let pipe = Pipe()
-        task.standardError = pipe
-        
-        do {
-            try task.run()
-            task.waitUntilExit()
-            
-            let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            if let output = String(data: data, encoding: .utf8) {
-                info += output
-            }
-        } catch {
-            info += "Error reading signature: \(error.localizedDescription)\n"
-        }
-        
-        return info.isEmpty ? nil : info
     }
     
     private func getProvisioningProfileInfo() -> String? {
@@ -162,7 +127,7 @@ class DiagnosticsViewController: UIViewController {
             return "Failed to read profile data"
         }
         
-        // Find XML content between <?xml and </plist>
+        // Find XML content
         guard let profileString = String(data: profileData, encoding: .ascii) else {
             return "Failed to decode profile"
         }
@@ -191,10 +156,16 @@ class DiagnosticsViewController: UIViewController {
                     info += "Team ID: \(firstID)\n"
                 }
                 if let creationDate = plist["CreationDate"] as? Date {
-                    info += "Created: \(creationDate)\n"
+                    let formatter = DateFormatter()
+                    formatter.dateStyle = .medium
+                    formatter.timeStyle = .short
+                    info += "Created: \(formatter.string(from: creationDate))\n"
                 }
                 if let expirationDate = plist["ExpirationDate"] as? Date {
-                    info += "Expires: \(expirationDate)\n"
+                    let formatter = DateFormatter()
+                    formatter.dateStyle = .medium
+                    formatter.timeStyle = .short
+                    info += "Expires: \(formatter.string(from: expirationDate))\n"
                 }
                 if let appID = plist["AppIDName"] as? String {
                     info += "App ID: \(appID)\n"
@@ -207,47 +178,6 @@ class DiagnosticsViewController: UIViewController {
             }
         } catch {
             return "Error parsing profile: \(error.localizedDescription)"
-        }
-        
-        return nil
-    }
-    
-    private func getEntitlements() -> String? {
-        guard let entitlements = Bundle.main.infoDictionary?["Entitlements"] as? [String: Any] else {
-            // Try alternative method
-            return getEntitlementsFromCodeSign()
-        }
-        
-        var info = ""
-        for (key, value) in entitlements.sorted(by: { $0.key < $1.key }) {
-            info += "\(key): \(value)\n"
-        }
-        
-        return info.isEmpty ? nil : info
-    }
-    
-    private func getEntitlementsFromCodeSign() -> String? {
-        guard let executablePath = Bundle.main.executablePath else {
-            return "Executable path not found"
-        }
-        
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: "/usr/bin/codesign")
-        task.arguments = ["-d", "--entitlements", "-", executablePath]
-        
-        let pipe = Pipe()
-        task.standardOutput = pipe
-        
-        do {
-            try task.run()
-            task.waitUntilExit()
-            
-            let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            if let output = String(data: data, encoding: .utf8) {
-                return output
-            }
-        } catch {
-            return "Error reading entitlements: \(error.localizedDescription)"
         }
         
         return nil
