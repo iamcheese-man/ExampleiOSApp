@@ -127,9 +127,18 @@ class DiagnosticsViewController: UIViewController {
             return "Failed to read profile data"
         }
         
-        // Find XML content
+        // Try parsing as binary plist first
+        do {
+            if let plist = try PropertyListSerialization.propertyList(from: profileData, options: [], format: nil) as? [String: Any] {
+                return formatProvisioningInfo(from: plist)
+            }
+        } catch {
+            // Binary parsing failed, try XML extraction
+        }
+        
+        // Try extracting XML from the data
         guard let profileString = String(data: profileData, encoding: .ascii) else {
-            return "Failed to decode profile"
+            return "Failed to decode profile (binary format)"
         }
         
         guard let startRange = profileString.range(of: "<?xml"),
@@ -144,42 +153,60 @@ class DiagnosticsViewController: UIViewController {
         
         do {
             if let plist = try PropertyListSerialization.propertyList(from: xmlData, options: [], format: nil) as? [String: Any] {
-                var info = ""
-                
-                if let name = plist["Name"] as? String {
-                    info += "Name: \(name)\n"
-                }
-                if let teamName = plist["TeamName"] as? String {
-                    info += "Team: \(teamName)\n"
-                }
-                if let teamID = plist["TeamIdentifier"] as? [String], let firstID = teamID.first {
-                    info += "Team ID: \(firstID)\n"
-                }
-                if let creationDate = plist["CreationDate"] as? Date {
-                    let formatter = DateFormatter()
-                    formatter.dateStyle = .medium
-                    formatter.timeStyle = .short
-                    info += "Created: \(formatter.string(from: creationDate))\n"
-                }
-                if let expirationDate = plist["ExpirationDate"] as? Date {
-                    let formatter = DateFormatter()
-                    formatter.dateStyle = .medium
-                    formatter.timeStyle = .short
-                    info += "Expires: \(formatter.string(from: expirationDate))\n"
-                }
-                if let appID = plist["AppIDName"] as? String {
-                    info += "App ID: \(appID)\n"
-                }
-                if let provisions = plist["ProvisionedDevices"] as? [String] {
-                    info += "Devices: \(provisions.count) device(s)\n"
-                }
-                
-                return info
+                return formatProvisioningInfo(from: plist)
             }
         } catch {
             return "Error parsing profile: \(error.localizedDescription)"
         }
         
-        return nil
+        return "Unknown profile format"
+    }
+    
+    private func formatProvisioningInfo(from plist: [String: Any]) -> String {
+        var info = ""
+        
+        if let name = plist["Name"] as? String {
+            info += "Name: \(name)\n"
+        }
+        if let teamName = plist["TeamName"] as? String {
+            info += "Team: \(teamName)\n"
+        }
+        if let teamID = plist["TeamIdentifier"] as? [String], let firstID = teamID.first {
+            info += "Team ID: \(firstID)\n"
+        }
+        if let creationDate = plist["CreationDate"] as? Date {
+            let formatter = DateFormatter()
+            formatter.dateStyle = .medium
+            formatter.timeStyle = .short
+            info += "Created: \(formatter.string(from: creationDate))\n"
+        }
+        if let expirationDate = plist["ExpirationDate"] as? Date {
+            let formatter = DateFormatter()
+            formatter.dateStyle = .medium
+            formatter.timeStyle = .short
+            info += "Expires: \(formatter.string(from: expirationDate))\n"
+            
+            // Check if expired
+            if expirationDate < Date() {
+                info += "⚠️ EXPIRED\n"
+            }
+        }
+        if let appID = plist["AppIDName"] as? String {
+            info += "App ID: \(appID)\n"
+        }
+        if let provisions = plist["ProvisionedDevices"] as? [String] {
+            info += "Devices: \(provisions.count) device(s)\n"
+        }
+        if let entitlements = plist["Entitlements"] as? [String: Any] {
+            info += "\nEntitlements:\n"
+            for (key, value) in entitlements.sorted(by: { $0.key < $1.key }).prefix(5) {
+                info += "  \(key): \(value)\n"
+            }
+            if entitlements.count > 5 {
+                info += "  ... and \(entitlements.count - 5) more\n"
+            }
+        }
+        
+        return info.isEmpty ? "Profile data found but empty" : info
     }
 }
