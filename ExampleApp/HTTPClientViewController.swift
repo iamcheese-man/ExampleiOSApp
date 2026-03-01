@@ -130,6 +130,7 @@ class HTTPClientViewController: UIViewController {
         view.backgroundColor = .systemBackground
         
         setupUI()
+        addDoneButtonToKeyboard()
         sendButton.addTarget(self, action: #selector(sendRequest), for: .touchUpInside)
         
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
@@ -209,6 +210,20 @@ class HTTPClientViewController: UIViewController {
             responseTextView.heightAnchor.constraint(equalToConstant: 300),
             responseTextView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -20)
         ])
+    }
+    private func addDoneButtonToKeyboard() {
+    let toolbar = UIToolbar()
+    toolbar.sizeToFit()
+    
+    let flexSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+    let done = UIBarButtonItem(barButtonSystemItem: .done, target: self, action: #selector(dismissKeyboard))
+    
+    toolbar.items = [flexSpace, done]
+    
+    // Apply to ALL text inputs
+    urlTextField.inputAccessoryView = toolbar
+    headersTextView.inputAccessoryView = toolbar
+    bodyTextView.inputAccessoryView = toolbar
     }
     
     @objc private func dismissKeyboard() {
