@@ -101,6 +101,15 @@ class DiagnosticsViewController: UIViewController {
         info += "Name: \(UIDevice.current.name)\n"
         info += "\n"
         
+        // JIT Status
+        info += "⚡ JIT STATUS\n"
+        if isJITEnabled() {
+            info += "Status: ✅ ENABLED\n"
+        } else {
+            info += "Status: ❌ DISABLED\n"
+        }
+        info += "\n"
+        
         // Provisioning Profile
         info += "📄 PROVISIONING PROFILE\n"
         if let profileInfo = getProvisioningProfileInfo() {
@@ -116,6 +125,20 @@ class DiagnosticsViewController: UIViewController {
         info += "Bundle: \(Bundle.main.bundlePath)\n"
         
         infoTextView.text = info
+    }
+    
+    private func isJITEnabled() -> Bool {
+        // Try to allocate executable memory
+        let size = 1024
+        let ptr = mmap(nil, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)
+        
+        if ptr == MAP_FAILED {
+            return false
+        }
+        
+        // Successfully allocated executable memory - JIT is enabled
+        munmap(ptr, size)
+        return true
     }
     
     private func getProvisioningProfileInfo() -> String? {
