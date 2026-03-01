@@ -2,8 +2,6 @@
 //  AppDelegate.swift
 //  ExampleApp
 //
-//  Created by Claude
-//
 
 import UIKit
 
@@ -25,10 +23,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Diagnostics Tab
         let diagnosticsVC = DiagnosticsViewController()
         diagnosticsVC.tabBarItem = UITabBarItem(title: "Diagnostics", image: UIImage(systemName: "stethoscope"), tag: 1)
+
+        // HTTP Client Tab
+        let httpVC = HTTPClientViewController()
+        httpVC.tabBarItem = UITabBarItem(title: "HTTP", image: UIImage(systemName: "network"), tag: 2)
         
         tabBarController.viewControllers = [
             UINavigationController(rootViewController: viewController),
-            UINavigationController(rootViewController: diagnosticsVC)
+            UINavigationController(rootViewController: diagnosticsVC),
+            UINavigationController(rootViewController: httpVC)
         ]
         
         window?.rootViewController = tabBarController
