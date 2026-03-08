@@ -46,5 +46,12 @@
         <key>UIApplicationSupportsMultipleScenes</key>
         <false/>
     </dict>
+    <key>NSSupportsLiveActivities</key>
+    <true/>
+    <key>NSUserActivityTypes</key>
+    <array>
+        <string>BetterGetActionExampleIntent</string>
+    </array>
+
 </dict>
 </plist>
