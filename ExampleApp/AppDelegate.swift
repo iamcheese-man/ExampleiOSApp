@@ -4,6 +4,7 @@
 //
 
 import UIKit
+import AppIntents
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
