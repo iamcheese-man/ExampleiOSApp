@@ -114,8 +114,9 @@ class ViewController: UIViewController {
         }
     }
 
-    public func addTaps(t) {
+    public func addTaps(amount t: Int) {
         tapCount += t
+        counterLabel.text = "Taps: \(tapCount)"
     }
     
     private func showCongratulationsAlert() {
