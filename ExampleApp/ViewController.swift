@@ -2,8 +2,7 @@
 //  ViewController.swift
 //  ExampleApp
 //
-//  Created by Claude
-//
+
 
 import UIKit
 
@@ -113,6 +112,10 @@ class ViewController: UIViewController {
         if tapCount % 10 == 0 {
             showCongratulationsAlert()
         }
+    }
+
+    public func addTaps(t) {
+        tapCount += t
     }
     
     private func showCongratulationsAlert() {
